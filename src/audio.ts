@@ -68,6 +68,36 @@ export function resolveAsset(url: string): string {
   return url;
 }
 
+/** 移动端浏览器（尤其 iOS Safari）要求「首次用户手势」后才能播放声音，
+ *  否则程序化 play() 会被静默拦截——这正是手机上「自动朗读没声音」的另一半根因。
+ *  本函数在首个 pointerdown / touchstart / click 时「预热」一个静音 Audio，
+ *  从而解锁整个页面的音频播放，使之后进题自动朗读（非手势触发）也能正常出声。
+ *  幂等：多次调用只生效一次。 */
+let audioUnlocked = false;
+export function ensureAudioUnlocked() {
+  if (audioUnlocked || typeof window === 'undefined') return;
+  const unlock = () => {
+    try {
+      const a = new Audio();
+      // 一段 44 字节的静音 WAV，仅用于解锁播放权限，不发出任何声音
+      a.src =
+        'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=';
+      a.volume = 0;
+      const p = a.play();
+      if (p) p.catch(() => {});
+    } catch {
+      /* 忽略：解锁失败也不影响后续手动播放 */
+    }
+    audioUnlocked = true;
+    window.removeEventListener('pointerdown', unlock);
+    window.removeEventListener('touchstart', unlock);
+    window.removeEventListener('click', unlock);
+  };
+  window.addEventListener('pointerdown', unlock, { once: true });
+  window.addEventListener('touchstart', unlock, { once: true });
+  window.addEventListener('click', unlock, { once: true });
+}
+
 /** 播放音频文件（如拼音 / 汉字真人发音 mp3），播放结束后执行 after。
  *  加载失败 / 播放异常 / onended 丢失 时，用兜底延迟触发 after，保证流程不卡死。 */
 export function playAudio(url: string, after?: () => void) {
