@@ -59,16 +59,23 @@ export function ActivityView({
   // 拖拽点数
   const [count, setCount] = useState(0);
 
-  // 进入题目时自动朗读题干（read 开启时）；用 ref 防止 StrictMode 重复朗读同一题
+  // 进入题目时自动朗读（read 开启时）；用 ref 防止 StrictMode 重复朗读同一题
   const spokenRef = useRef<string | null>(null);
   useEffect(() => {
     if (!read || !activity.prompt) return;
-    // 认读题(听音选字)由 mp3 自动播放目标读音，这里不再 TTS 题干，避免两个声音重叠
-    if (activity.topic === '认读' && activity.audio) return;
+    // 凡带真人发音 mp3 的题（拼音认读 / 识字 / 词语 / 拼读 / 声调 / 标调）：
+    // 自动播放 mp3 发音，而非 TTS 题干——既避免 TTS 把拼音/汉字读错，
+    // 也保证手机浏览器（Web Speech TTS 普遍不可用）能正常发声
+    if (activity.audio) {
+      if (spokenRef.current === activity.id) return;
+      spokenRef.current = activity.id;
+      playAudio(activity.audio);
+      return;
+    }
     if (spokenRef.current === activity.id) return;
     spokenRef.current = activity.id;
     speak(activity.prompt);
-  }, [activity.id, read, activity.prompt, activity.topic, activity.audio]);
+  }, [activity.id, read, activity.prompt, activity.audio]);
 
   // 答错时机器人读出鼓励语（与 RobotCompanion 的 wrong 气泡文案一致）
   // 用 wrongTick 触发：选择题 feedback 会停在 'wrong' 不再变化，重复答错需靠计数重新朗读
