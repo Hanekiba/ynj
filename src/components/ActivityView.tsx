@@ -182,7 +182,7 @@ export function ActivityView({
         <button
           type="button"
           className="read-btn"
-          onClick={() => (activity.audio ? playAudio(activity.audio) : speak(activity.prompt))}
+          onClick={() => speak(activity.prompt)}
           aria-label="听题目"
           title="听题目"
         >

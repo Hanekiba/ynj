@@ -106,10 +106,11 @@ export function ActivityVisual({ activity }: { activity: Activity }) {
         </div>
       )}
 
-      {/* 听力型拼音认读：隐藏目标字符，仅播读音，避免答案写在题目里 */}
+      {/* 听力型拼音认读：隐藏目标字符，仅播读音，避免答案写在题目里。
+          自动播放交由 ActivityView 统一处理，这里只做手动重播，避免进题时两段音频重叠 */}
       {activity.audio && activity.topic === '认读' && (
         <div className="listen-stage">
-          <SpeakerButton src={activity.audio} label={`播放 ${activity.char || '拼音'} 的读音`} autoPlay />
+          <SpeakerButton src={activity.audio} label={`播放 ${activity.char || '拼音'} 的读音`} />
         </div>
       )}
 
