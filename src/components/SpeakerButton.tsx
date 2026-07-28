@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { resolveAsset } from '../audio';
 
 /** 纯 SVG 喇叭按钮（不使用 emoji），点击播放拼音参考读音 */
 export function SpeakerButton({
@@ -24,10 +25,11 @@ export function SpeakerButton({
 
   function play() {
     if (!src) return;
+    const url = resolveAsset(src);
     if (!audioRef.current) {
-      audioRef.current = new Audio(src);
+      audioRef.current = new Audio(url);
     } else {
-      audioRef.current.src = src;
+      audioRef.current.src = url;
     }
     setPlaying(true);
     const p = audioRef.current.play();

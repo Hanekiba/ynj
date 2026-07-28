@@ -54,11 +54,25 @@ export function speakAndThen(text: string, after: () => void) {
   }
 }
 
+/** 把站内资源路径拼上 Vite 的 BASE_URL（生产环境为 /ynj/，本地为 /），
+ *  解决 GitHub Pages 项目站点（base 非根）下绝对路径 /audio/... 被解析成
+ *  https://user.github.io/audio/... 而 404 的问题。
+ *  外链 http(s) 原样返回，空值原样返回。 */
+export function resolveAsset(url: string): string {
+  if (!url) return url;
+  if (/^https?:\/\//i.test(url)) return url;
+  if (url.startsWith('/')) {
+    const base = import.meta.env.BASE_URL || '/';
+    return base.replace(/\/$/, '') + url;
+  }
+  return url;
+}
+
 /** 播放音频文件（如拼音 / 汉字真人发音 mp3），播放结束后执行 after。
  *  加载失败 / 播放异常 / onended 丢失 时，用兜底延迟触发 after，保证流程不卡死。 */
 export function playAudio(url: string, after?: () => void) {
   try {
-    const a = new Audio(url);
+    const a = new Audio(resolveAsset(url));
     if (after) {
       let done = false;
       const finish = () => {
