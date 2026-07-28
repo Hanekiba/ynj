@@ -59,22 +59,18 @@ export function ActivityView({
   // 拖拽点数
   const [count, setCount] = useState(0);
 
-  // 进入题目时自动朗读（read 开启时）；用 ref 防止 StrictMode 重复朗读同一题
+  // 进入题目时自动朗读（read 开启时）：先朗读题干，朗读结束（或环境不支持/异常兜底）后
+  // 再自动播放目标音（真人发音 mp3）。用 ref 防止 StrictMode 重复触发同一题。
+  // speakAndThen 在无 Web Speech / onend 丢失时会在兜底延迟后触发回调，
+  // 因此手机端即便 TTS 不可用，也会自动跳过到播放 mp3，保证有声。
   const spokenRef = useRef<string | null>(null);
   useEffect(() => {
     if (!read || !activity.prompt) return;
-    // 凡带真人发音 mp3 的题（拼音认读 / 识字 / 词语 / 拼读 / 声调 / 标调）：
-    // 自动播放 mp3 发音，而非 TTS 题干——既避免 TTS 把拼音/汉字读错，
-    // 也保证手机浏览器（Web Speech TTS 普遍不可用）能正常发声
-    if (activity.audio) {
-      if (spokenRef.current === activity.id) return;
-      spokenRef.current = activity.id;
-      playAudio(activity.audio);
-      return;
-    }
     if (spokenRef.current === activity.id) return;
     spokenRef.current = activity.id;
-    speak(activity.prompt);
+    speakAndThen(activity.prompt, () => {
+      if (activity.audio) playAudio(activity.audio);
+    });
   }, [activity.id, read, activity.prompt, activity.audio]);
 
   // 答错时机器人读出鼓励语（与 RobotCompanion 的 wrong 气泡文案一致）
